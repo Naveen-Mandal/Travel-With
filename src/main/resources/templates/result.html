@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Co-Traveller Matches</title>
+
+    <link rel="stylesheet" th:href="@{/style2.css}">
+</head>
+<body>
+
+<div class="container">
+    <h1>Co-Traveller Matches</h1>
+    <p class="status">We looked for people with same train/date or same station/time/date.</p>
+
+    <!-- Station and Time Details -->
+    <div class="station-info">
+        <h2>Your Journey</h2>
+        <div class="detail-item">
+            <span class="detail-label">Source Station:</span>
+            <span th:text="${sourceStation}">Bhopal Junction(BP)</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Train Number:</span>
+            <span th:text="${trainNo}">12980</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Journey Date:</span>
+            <span th:text="${journeyDate}">2025-09-15</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Station Time:</span>
+            <span th:text="${stationTime}">10:00</span>
+        </div>
+
+        <div class="detail-item">
+            <span class="detail-label">Total Matches Found:</span>
+            <span th:text="${#lists.size(matches)}">0</span>
+        </div>
+    </div>
+
+    <!-- Passenger Details Table -->
+    <h2 class="table-title" th:if="${#lists.size(matches)} > 0">People you can travel with</h2>
+    <h2 class="table-title" th:if="${#lists.size(matches)} == 0">No matching co-travellers found yet.</h2>
+
+    <table th:if="${#lists.size(matches)} > 0">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Passenger Name</th>
+            <th>Contact Number</th>
+            <th>Train Number</th>
+            <th>Destination</th>
+            <th>Train Departure Time</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="u, iStat : ${matches}">
+            <td th:text="${iStat.index + 1}"></td>
+            <td th:text="${u.name}"></td>
+            <td th:text="${u.pnr.phoneNo}"></td>
+            <td th:text="${u.pnr.trainNo}"></td>
+            <td th:text="${u.destinationStation}"></td>
+            <td th:text="${u.trainDepartureTime}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>
