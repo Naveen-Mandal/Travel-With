@@ -16,93 +16,101 @@
 
         <div class="form-group">
             <label for="name">Your Name</label>
-            <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    placeholder="Enter your name"
-                    required>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
         </div>
-
-<!--        <div class="form-group">-->
-<!--            <label for="pnr">PNR Number</label>-->
-<!--            <input-->
-<!--                    type="text"-->
-<!--                    id="pnr"-->
-<!--                    name="pnrNo"-->
-<!--                    placeholder="Enter PNR"-->
-<!--                    maxlength="10"-->
-<!--                    required>-->
-<!--            <div class="help-text">10-digit booking number.</div>-->
-<!--        </div>-->
 
         <div class="form-group">
             <label for="phone">Phone Number</label>
-            <input
-                    type="tel"
-                    id="phone"
-                    name="phoneNo"
-                    placeholder="Enter mobile number"
-                    maxlength="10"
-                    required>
+            <input type="tel" id="phone" name="phoneNo" placeholder="Enter mobile number" maxlength="10" required>
             <div class="help-text">10-digit contact number.</div>
         </div>
 
         <div class="form-group">
             <label for="sourceStation">Source Station</label>
-            <input
-                    type="text"
-                    id="sourceStation"
-                    name="sourceStation"
-                    placeholder="e.g. Bhopal (Don't overwrite station name to match station)"
-                    required>
+            <div class="autocomplete-wrapper">
+                <input type="text" id="sourceStation" name="sourceStation"
+                       placeholder="Type to search (e.g. Bhopal)" required autocomplete="off">
+                <div id="source-suggestions" class="suggestions-list"></div>
+            </div>
         </div>
 
         <div class="form-group">
             <label for="destinationStation">Destination Station</label>
-            <input
-                    type="text"
-                    id="destinationStation"
-                    name="destinationStation"
-                    placeholder="e.g. Mumbai (Don't over write station name)"
-                    required>
+            <div class="autocomplete-wrapper">
+                <input type="text" id="destinationStation" name="destinationStation"
+                       placeholder="Type to search (e.g. Mumbai)" required autocomplete="off">
+                <div id="dest-suggestions" class="suggestions-list"></div>
+            </div>
         </div>
 
         <div class="form-group">
             <label for="trainNo">Train Number</label>
-            <input
-                    type="text"
-                    id="trainNo"
-                    name="trainNo"
-                    placeholder="e.g. 12980"
-                    required>
-            <div class="help-text">You can later auto-fill this from PNR API.</div>
+            <input type="text" id="trainNo" name="trainNo" placeholder="e.g. 12980" required>
         </div>
 
         <div class="form-group">
             <label for="journeyDate">Journey Date</label>
-            <input
-                    type="date"
-                    id="journeyDate"
-                    name="journeyDate"
-                    required>
+            <input type="date" id="journeyDate" name="journeyDate" required>
         </div>
 
         <div class="form-group">
             <label for="stationTime">Time you will reach station</label>
-            <input
-                    type="time"
-                    id="stationTime"
-                    name="stationTime"
-                    required>
+            <input type="time" id="stationTime" name="stationTime" required>
             <div class="help-text">Used to match people going to station at same time.</div>
         </div>
 
-        <button type="submit" class="btn-submit">
-            Find Co-Travellers
-        </button>
+        <button type="submit" class="btn-submit">Find Co-Travellers</button>
     </form>
 </div>
+
+<script th:inline="javascript">
+    /* Get the list of stations from Java Model */
+    /* Correct way to load data from Java */
+    const stations = /*[[${stationList}]]*/ [];
+
+    function setupAutocomplete(inputId, listId) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+
+        input.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            list.innerHTML = '';
+
+            if (!query) {
+                list.style.display = 'none';
+                return;
+            }
+
+            const matches = stations.filter(s => s.toLowerCase().includes(query));
+
+            if (matches.length > 0) {
+                matches.forEach(station => {
+                    const item = document.createElement('div');
+                    item.textContent = station;
+                    item.addEventListener('click', function() {
+                        input.value = station;
+                        list.style.display = 'none';
+                    });
+                    list.appendChild(item);
+                });
+                list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
+            }
+        });
+
+        // Hide list if clicked outside
+        document.addEventListener('click', function(e) {
+            if (e.target !== input && e.target !== list) {
+                list.style.display = 'none';
+            }
+        });
+    }
+
+    // Initialize for both inputs
+    setupAutocomplete('sourceStation', 'source-suggestions');
+    setupAutocomplete('destinationStation', 'dest-suggestions');
+</script>
 
 </body>
 </html>

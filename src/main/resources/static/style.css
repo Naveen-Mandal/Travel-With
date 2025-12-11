@@ -11,15 +11,13 @@
     --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     background: radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.12), transparent 30%),
-                radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 25%),
-                linear-gradient(135deg, #0b1221 0%, #0f172a 60%, #0a0f1d 100%);
+    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 25%),
+    linear-gradient(135deg, #0b1221 0%, #0f172a 60%, #0a0f1d 100%);
     color: var(--text);
     margin: 0;
     display: flex;
@@ -40,37 +38,14 @@ body {
     backdrop-filter: blur(12px);
 }
 
-h1 {
-    text-align: center;
-    margin: 0 0 8px;
-    font-size: 1.9rem;
-    letter-spacing: 0.2px;
-    color: #f8fafc;
-}
+h1 { text-align: center; margin: 0 0 8px; font-size: 1.9rem; color: #f8fafc; }
+p.subtitle { text-align: center; color: var(--muted); margin: 0 0 24px; font-size: 0.95rem; }
 
-p.subtitle {
-    text-align: center;
-    color: var(--muted);
-    margin: 0 0 24px;
-    font-size: 0.95rem;
-}
+.form-group { margin-bottom: 16px; position: relative; } /* Added position: relative for dropdown */
 
-.form-group {
-    margin-bottom: 16px;
-}
+label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.92rem; color: #e2e8f0; }
 
-label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 6px;
-    font-size: 0.92rem;
-    color: #e2e8f0;
-}
-
-input[type="text"],
-input[type="tel"],
-input[type="date"],
-input[type="time"] {
+input {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--input-border);
@@ -88,10 +63,6 @@ input:focus {
 }
 
 .btn-submit {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     width: 100%;
     padding: 14px;
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
@@ -102,71 +73,42 @@ input:focus {
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 10px 30px rgba(94, 234, 212, 0.35);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    transition: transform 0.15s ease;
 }
 
-.btn-submit:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 14px 34px rgba(94, 234, 212, 0.45);
-    filter: brightness(1.02);
+.btn-submit:hover { transform: translateY(-1px); filter: brightness(1.02); }
+.help-text { margin-top: 6px; font-size: 0.8rem; color: var(--muted); }
+
+/* --- AUTOCOMPLETE DROPDOWN STYLES --- */
+.autocomplete-wrapper { position: relative; width: 100%; }
+
+.suggestions-list {
+    position: absolute;
+    top: 105%; /* Just below input */
+    left: 0; right: 0;
+    z-index: 100;
+    background: #0f172a; /* Solid dark color to cover content behind */
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    display: none; /* Hidden by default */
 }
 
-.btn-submit:active {
-    transform: translateY(0);
-    box-shadow: 0 10px 24px rgba(94, 234, 212, 0.35);
+.suggestions-list div {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-size: 0.95rem;
 }
 
-.help-text {
-    margin-top: 6px;
-    font-size: 0.8rem;
-    color: var(--muted);
+.suggestions-list div:hover {
+    background-color: rgba(94, 234, 212, 0.15); /* Green hover effect */
+    color: var(--primary);
 }
 
-/* Responsive tweaks */
-@media (max-width: 720px) {
-    body {
-        padding: 16px;
-        align-items: flex-start;
-    }
-    .container {
-        padding: 22px;
-        border-radius: 14px;
-    }
-    h1 {
-        font-size: 1.55rem;
-    }
-    p.subtitle {
-        font-size: 0.9rem;
-        margin-bottom: 18px;
-    }
-    label {
-        font-size: 0.9rem;
-    }
-    input[type="text"],
-    input[type="tel"],
-    input[type="date"],
-    input[type="time"] {
-        font-size: 0.95rem;
-        padding: 11px;
-    }
-    .btn-submit {
-        padding: 13px;
-        font-size: 0.98rem;
-    }
-}
-
-@media (max-width: 480px) {
-    body {
-        padding: 14px 12px;
-    }
-    .container {
-        padding: 18px;
-        border-radius: 12px;
-    }
-    h1 {
-        font-size: 1.4rem;
-    }
-    p.subtitle {
-        font-size: 0.85rem;
-    }
-}
+/* Scrollbar styles */
+.suggestions-list::-webkit-scrollbar { width: 8px; }
+.suggestions-list::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 4px; }
