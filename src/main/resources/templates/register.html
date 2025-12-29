@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Register - Travel With</title>
+    <link rel="stylesheet" th:href="@{/style.css}"/>
+</head>
+<body>
+<div class="container auth-container">
+    <h1>Travel With</h1>
+    <p class="subtitle">Create your account once. Next time you only enter journey details.</p>
+
+    <div class="alert error" th:if="${error}" th:text="${error}"></div>
+
+    <form th:action="@{/register}" method="post">
+
+        <div class="form-group">
+            <label for="phoneNo">Phone Number</label>
+            <input id="phoneNo" name="phoneNo" type="tel"
+                   inputmode="numeric" minlength="10" maxlength="10"
+                   placeholder="10-digit phone number" required />
+            <div class="help-text">This will be your login ID.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input id="name" name="name" type="text"
+                   placeholder="Your full name" required />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password"
+                   minlength="8"
+                   placeholder="Create a password" required />
+            <div class="help-text">Use at least 8 characters.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password"
+                   minlength="8"
+                   placeholder="Confirm your password" required />
+        </div>
+
+        <!-- CSRF token required for POST when CSRF is enabled -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/> <!-- [web:773] -->
+
+        <button type="submit" class="btn-submit">Register</button>
+    </form>
+
+    <div class="links-row">
+        Already registered? <a th:href="@{/login}">Login</a>
+    </div>
+</div>
+
+<script>
+    // Client-side password validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Passwords do not match. Please try again.');
+            document.getElementById('confirmPassword').focus();
+            return false;
+        }
+    });
+
+    // Real-time password match indicator
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    
+    function checkPasswordMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (confirmPassword.length === 0) {
+            confirmPasswordInput.style.borderColor = '';
+            return;
+        }
+        
+        if (password === confirmPassword) {
+            confirmPasswordInput.style.borderColor = '#5eead4';
+        } else {
+            confirmPasswordInput.style.borderColor = '#f87171';
+        }
+    }
+    
+    passwordInput.addEventListener('input', checkPasswordMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+</script>
+</body>
+</html>

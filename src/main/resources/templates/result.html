@@ -1,49 +1,73 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Co-Traveller Matches</title>
+    <link rel="stylesheet" th:href="@{/style2.css}" />
 
-    <link rel="stylesheet" th:href="@{/style2.css}">
+    <style>
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; }
+        .brand { font-weight: 700; }
+        .profile { position: relative; }
+        .profile-btn { cursor:pointer; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; background:#fff; }
+        .profile-menu { position:absolute; right:0; top:44px; min-width:220px; background:#fff; border:1px solid #ddd; border-radius:10px; padding:10px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+        .hidden { display:none; }
+        .logout-btn { width:100%; cursor:pointer; margin-top: 8px; padding:8px 10px; border-radius:10px; border:1px solid #ddd; background:#f7f7f7; }
+        .profile-phone { font-size: 0.9rem; opacity: .85; }
+    </style>
 </head>
-<body>
 
+<body>
 <div class="container">
+
+    <div class="topbar">
+        <div class="brand">Travel With</div>
+
+        <div class="profile">
+            <button type="button" id="profileBtn" class="profile-btn">
+                <span th:text="${displayName}">Profile</span>
+            </button>
+
+            <div id="profileMenu" class="profile-menu hidden">
+                <div class="profile-phone">
+                    <span th:text="${displayPhoneNo}">phone</span>
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <h1>Co-Traveller Matches</h1>
     <p class="status">We looked for people with same train/date or same station/time/date.</p>
 
-    <!-- Station and Time Details -->
     <div class="station-info">
         <h2>Your Journey</h2>
-        <div class="detail-item">
-            <span class="detail-label">Source Station:</span>
-            <span th:text="${sourceStation}">Bhopal Junction(BP)</span>
-        </div>
-        <div class="detail-item">
-            <span class="detail-label">Train Number:</span>
-            <span th:text="${trainNo}">12980</span>
-        </div>
-        <div class="detail-item">
-            <span class="detail-label">Journey Date:</span>
-            <span th:text="${journeyDate}">2025-09-15</span>
-        </div>
-        <div class="detail-item">
-            <span class="detail-label">Station Time:</span>
-            <span th:text="${stationTime}">10:00</span>
-        </div>
+
+        <div class="detail-item"><span class="detail-label">Source:</span> <span th:text="${sourceStation}"></span></div>
+        <div class="detail-item"><span class="detail-label">Destination:</span> <span th:text="${destinationStation}"></span></div>
+        <div class="detail-item"><span class="detail-label">Train:</span> <span th:text="${trainNo}"></span></div>
+        <div class="detail-item"><span class="detail-label">Start date:</span> <span th:text="${journeyDate}"></span></div>
+        <div class="detail-item"><span class="detail-label">End date:</span> <span th:text="${journeyEndDate}"></span></div>
+        <div class="detail-item"><span class="detail-label">Source time:</span> <span th:text="${stationTime}"></span></div>
+        <div class="detail-item"><span class="detail-label">Destination arrival:</span> <span th:text="${destArrivalTime}"></span></div>
 
         <div class="detail-item">
-            <span class="detail-label">Total Matches Found:</span>
+            <span class="detail-label">Total Source Matches:</span>
             <span th:text="${#lists.size(matches)}">0</span>
         </div>
     </div>
 
-    <!-- Passenger Details Table -->
-    <h2 class="table-title" th:if="${#lists.size(matches)} > 0">People you can travel with</h2>
-    <h2 class="table-title" th:if="${#lists.size(matches)} == 0">No matching co-travellers found yet.</h2>
+    <h2 class="table-title" th:if="${#lists.size(matches) > 0}">People you can travel with</h2>
+    <h2 class="table-title" th:if="${#lists.size(matches) == 0}">No matching co-travellers found at source station yet.</h2>
 
-    <table th:if="${#lists.size(matches)} > 0">
+    <table th:if="${#lists.size(matches) > 0}">
         <thead>
         <tr>
             <th>#</th>
@@ -58,14 +82,54 @@
         <tr th:each="u, iStat : ${matches}">
             <td th:text="${iStat.index + 1}"></td>
             <td th:text="${u.name}"></td>
-            <td th:text="${u.pnr.phoneNo}"></td>
+            <td th:text="${u.phoneNo}"></td>
             <td th:text="${u.pnr.trainNo}"></td>
             <td th:text="${u.destinationStation}"></td>
             <td th:text="${u.trainDepartureTime}"></td>
         </tr>
         </tbody>
     </table>
+
+    <h2 class="table-title" th:if="${#lists.size(matchesAtDestination) > 0}">
+        People with whom you can share Auto Rickshaw to college
+    </h2>
+    <h2 class="table-title" th:if="${#lists.size(matchesAtDestination) == 0}">
+        No matching co-travellers found at destinationto share Auto Rickshaw to college.
+    </h2>
+
+    <table th:if="${#lists.size(matchesAtDestination) > 0}">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Passenger Name</th>
+            <th>Contact Number</th>
+            <th>Destination Station</th>
+            <th>Reaching Time at Destination</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="u, iStat : ${matchesAtDestination}">
+            <td th:text="${iStat.index + 1}"></td>
+            <td th:text="${u.name}"></td>
+            <td th:text="${u.phoneNo}"></td>
+            <td th:text="${u.destinationStation}"></td>
+            <td th:text="${u.destArrivalTime}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="actions">
+        <a th:href="@{/}">Search again</a>
+    </div>
 </div>
 
+<script>
+    const btn = document.getElementById('profileBtn');
+    const menu = document.getElementById('profileMenu');
+    btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
+    });
+</script>
 </body>
 </html>

@@ -5,22 +5,23 @@ import lombok.*;
 
 import java.time.LocalTime;
 
-@Data
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Setter
-@Getter
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 public class User {
+
     @Id
-//    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    @Column(length = 15)
+    private String phoneNo;
+
     private String name;
     private String sourceStation;
     private String destinationStation;
+
     private LocalTime trainDepartureTime;
+    private LocalTime destArrivalTime;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pnr", referencedColumnName = "pnrNo")
-    private Pnr pnr ;
+    private Pnr pnr;
 }

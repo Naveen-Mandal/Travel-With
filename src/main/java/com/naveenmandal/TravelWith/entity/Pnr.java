@@ -1,31 +1,24 @@
 package com.naveenmandal.TravelWith.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Getter
-@Setter
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 public class Pnr {
-    @Id
-    private String pnrNo;
-    private String phoneNo;
-    private String trainNo;
-    private LocalDate journeyDate;
 
-    @Override
-    public String toString() {
-        return "Pnr{" +
-                "pnrNo='" + pnrNo + '\'' +
-                ", phoneNo='" + phoneNo + '\'' +
-                ", trainNo='" + trainNo + '\'' +
-                ", journeyDate=" + journeyDate +
-                '}';
-    }
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer pnrNo;
+
+    @Column(length = 15, nullable = false)
+    private String phoneNo;
+
+    private String trainNo;
+
+    private LocalDate journeyDate;
+    private LocalDate journeyEndDate;
 }

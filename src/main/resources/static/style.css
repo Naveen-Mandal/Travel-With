@@ -14,10 +14,11 @@
 * { box-sizing: border-box; }
 
 body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background: radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.12), transparent 30%),
-    radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 25%),
-    linear-gradient(135deg, #0b1221 0%, #0f172a 60%, #0a0f1d 100%);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background:
+            radial-gradient(circle at 20% 20%, rgba(94, 234, 212, 0.12), transparent 30%),
+            radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.12), transparent 25%),
+            linear-gradient(135deg, #0b1221 0%, #0f172a 60%, #0a0f1d 100%);
     color: var(--text);
     margin: 0;
     display: flex;
@@ -27,6 +28,7 @@ body {
     padding: 24px;
 }
 
+/* shared card */
 .container {
     width: 100%;
     max-width: 520px;
@@ -38,14 +40,58 @@ body {
     backdrop-filter: blur(12px);
 }
 
-h1 { text-align: center; margin: 0 0 8px; font-size: 1.9rem; color: #f8fafc; }
-p.subtitle { text-align: center; color: var(--muted); margin: 0 0 24px; font-size: 0.95rem; }
+/* smaller card for auth pages */
+.container.auth-container {
+    max-width: 420px;
+}
 
-.form-group { margin-bottom: 16px; position: relative; } /* Added position: relative for dropdown */
+/* headings */
+.container h1 {
+    text-align: center;
+    margin: 0 0 8px;
+    font-size: 1.9rem;
+    color: #f8fafc;
+}
 
-label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.92rem; color: #e2e8f0; }
+.container p.subtitle {
+    text-align: center;
+    color: var(--muted);
+    margin: 0 0 24px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
 
-input {
+/* alerts */
+.alert {
+    border: 1px solid var(--card-border);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 0 0 16px;
+    font-size: 0.92rem;
+}
+
+.alert.error {
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #fecaca;
+}
+
+.alert.info {
+    border-color: rgba(94, 234, 212, 0.30);
+    color: #ccfbf1;
+}
+
+/* form */
+.container .form-group { margin-bottom: 16px; position: relative; }
+.container label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.92rem;
+    color: #e2e8f0;
+}
+
+.container input {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--input-border);
@@ -53,15 +99,24 @@ input {
     background: var(--input-bg);
     color: var(--text);
     font-size: 0.97rem;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
+    transition: border 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
 }
 
-input:focus {
+.container input::placeholder { color: rgba(148, 163, 184, 0.85); }
+
+.container input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.22);
 }
 
+.container .help-text {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* primary button */
 .btn-submit {
     width: 100%;
     padding: 14px;
@@ -73,27 +128,42 @@ input:focus {
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 10px 30px rgba(94, 234, 212, 0.35);
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 .btn-submit:hover { transform: translateY(-1px); filter: brightness(1.02); }
-.help-text { margin-top: 6px; font-size: 0.8rem; color: var(--muted); }
+.btn-submit:active { transform: translateY(0px); }
 
-/* --- AUTOCOMPLETE DROPDOWN STYLES --- */
+/* links row */
+.links-row {
+    margin-top: 14px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.links-row a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 650;
+}
+.links-row a:hover { text-decoration: underline; }
+
+/* autocomplete */
 .autocomplete-wrapper { position: relative; width: 100%; }
 
 .suggestions-list {
     position: absolute;
-    top: 105%; /* Just below input */
+    top: 105%;
     left: 0; right: 0;
     z-index: 100;
-    background: #0f172a; /* Solid dark color to cover content behind */
+    background: #0f172a;
     border: 1px solid var(--input-border);
     border-radius: 10px;
     max-height: 200px;
     overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    display: none; /* Hidden by default */
+    display: none;
 }
 
 .suggestions-list div {
@@ -105,10 +175,16 @@ input:focus {
 }
 
 .suggestions-list div:hover {
-    background-color: rgba(94, 234, 212, 0.15); /* Green hover effect */
+    background-color: rgba(94, 234, 212, 0.15);
     color: var(--primary);
 }
 
-/* Scrollbar styles */
 .suggestions-list::-webkit-scrollbar { width: 8px; }
 .suggestions-list::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 4px; }
+
+/* small screens */
+@media (max-width: 520px) {
+    body { padding: 14px; }
+    .container { padding: 22px; border-radius: 16px; }
+    .container h1 { font-size: 1.6rem; }
+}

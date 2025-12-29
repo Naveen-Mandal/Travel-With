@@ -1,57 +1,98 @@
 package com.naveenmandal.TravelWith.controller;
 
-import com.naveenmandal.TravelWith.entity.User;
+import com.naveenmandal.TravelWith.entity.StudentAccount;
+import com.naveenmandal.TravelWith.repository.StationRepo;
 import com.naveenmandal.TravelWith.service.PnrService;
-import com.naveenmandal.TravelWith.service.StationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.naveenmandal.TravelWith.service.StudentAccountService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 
 @Controller
+@RequiredArgsConstructor
 public class HomeController {
 
-    @Autowired
-    private PnrService pnrService;
+    private final PnrService pnrService;
+    private final StationRepo stationRepo;
+    private final StudentAccountService accountService;
 
-    @Autowired
-    private StationService stationService;
+    @ModelAttribute
+    public void addProfile(Model model, Principal principal) {
+        if (principal == null) return;
+        StudentAccount acc = accountService.getByPhoneNo(principal.getName());
+        model.addAttribute("displayName", acc.getName());
+        model.addAttribute("displayPhoneNo", acc.getPhoneNo());
+    }
 
     @GetMapping("/")
-    public String home(Model model) {
-        // Send the list of stations to the frontend
-        model.addAttribute("stationList", stationService.getAllStations());
+    public String home() {
         return "index";
     }
 
-    @PostMapping(path = "/search")
-    public String searchPnr(@RequestParam("phoneNo") String phoneNo,
-                            @RequestParam("name") String name,
-                            @RequestParam("sourceStation") String sourceStation,
-                            @RequestParam("destinationStation") String destinationStation,
-                            @RequestParam("stationTime") String stationTimeStr,
-                            @RequestParam("trainNo") String trainNo,
-                            @RequestParam("journeyDate") String journeyDateStr,
-                            Model model) {
+    @PostMapping("/search")
+    public String search(
+            Principal principal,
+            @RequestParam String sourceStation,
+            @RequestParam String destinationStation,
+            @RequestParam String stationTime,
+            @RequestParam String destArrivalTime,
+            @RequestParam(required = false) String trainNo,
+            @RequestParam String journeyDate,
+            @RequestParam(required = false) String journeyEndDate,
+            Model model
+    ) {
+        String phoneNo = principal.getName();
+        StudentAccount acc = accountService.getByPhoneNo(phoneNo);
 
-        LocalTime stationTime = LocalTime.parse(stationTimeStr);
-        LocalDate journeyDate = LocalDate.parse(journeyDateStr);
+        String name = acc.getName();
 
-        List<User> matches = pnrService.saveAndFindMatches(
-                phoneNo, name, sourceStation, destinationStation,
-                stationTime, trainNo, journeyDate
-        );
+        sourceStation = sourceStation == null ? "" : sourceStation.trim();
+        destinationStation = destinationStation == null ? "" : destinationStation.trim();
+
+        if (!stationRepo.existsByName(sourceStation)) {
+            model.addAttribute("error", "Please select a valid Source Station from suggestions.");
+            return "index";
+        }
+
+        if (!stationRepo.existsByName(destinationStation)) {
+            model.addAttribute("error", "Please select a valid Destination Station from suggestions.");
+            return "index";
+        }
+
+        LocalTime st = LocalTime.parse(stationTime);
+        LocalTime dt = LocalTime.parse(destArrivalTime);
+
+        LocalDate jd = LocalDate.parse(journeyDate);
+        LocalDate jed = (journeyEndDate == null || journeyEndDate.isBlank())
+                ? jd
+                : LocalDate.parse(journeyEndDate);
+
+        if (jed.isBefore(jd)) {
+            model.addAttribute("error", "Journey end date cannot be before journey date.");
+            return "index";
+        }
+
+        pnrService.saveJourney(phoneNo, name, sourceStation, destinationStation, st, dt, trainNo, jd, jed);
+
+        var matches = pnrService.findMatchesAtSource(phoneNo, sourceStation, st, trainNo, jd, jed);
+        var matchesAtDestination = pnrService.findMatchesAtDestination(phoneNo, destinationStation, dt, jed);
 
         model.addAttribute("matches", matches);
-        model.addAttribute("trainNo", trainNo);
-        model.addAttribute("journeyDate", journeyDate);
-        model.addAttribute("sourceStation", sourceStation);
-        model.addAttribute("stationTime", stationTime);
+        model.addAttribute("matchesAtDestination", matchesAtDestination);
 
-        return "result"; // Ensure you have a result.html
+        model.addAttribute("trainNo", trainNo);
+        model.addAttribute("journeyDate", jd);
+        model.addAttribute("journeyEndDate", jed);
+        model.addAttribute("sourceStation", sourceStation);
+        model.addAttribute("destinationStation", destinationStation);
+        model.addAttribute("stationTime", st);
+        model.addAttribute("destArrivalTime", dt);
+
+        return "result";
     }
 }

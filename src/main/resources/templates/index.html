@@ -1,35 +1,62 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Travel With - Find Co-Travellers</title>
-    <link rel="stylesheet" th:href="@{/style.css}">
+    <link rel="stylesheet" th:href="@{/style.css}" />
+
+    <style>
+        .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; }
+        .brand { font-weight: 700; }
+        .profile { position: relative; }
+        .profile-btn { cursor:pointer; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; background:#fff; }
+        .profile-menu { position:absolute; right:0; top:44px; min-width:220px; background:#fff; border:1px solid #ddd; border-radius:10px; padding:10px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+        .hidden { display:none; }
+        .logout-btn { width:100%; cursor:pointer; margin-top: 8px; padding:8px 10px; border-radius:10px; border:1px solid #ddd; background:#f7f7f7; }
+        .profile-phone { font-size: 0.9rem; opacity: .85; }
+    </style>
 </head>
+
 <body>
-
 <div class="container">
+
+    <div class="topbar">
+        <div class="brand">Travel With</div>
+
+        <div class="profile">
+            <button type="button" id="profileBtn" class="profile-btn">
+                <span th:text="${displayName}">Profile</span>
+            </button>
+
+            <div id="profileMenu" class="profile-menu hidden">
+                <div class="profile-phone">
+                    <span th:text="${displayPhoneNo}">phone</span>
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <h1>Travel With</h1>
-    <p class="subtitle">Enter your journey details to find co-travellers.</p>
+    <p class="subtitle">Enter journey details to match co-travellers and destination auto-share.</p>
 
-    <form action="/search" method="post">
+    <div class="alert error" th:if="${error}" th:text="${error}"></div>
 
-        <div class="form-group">
-            <label for="name">Your Name</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required>
-        </div>
-
-        <div class="form-group">
-            <label for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phoneNo" placeholder="Enter mobile number" maxlength="10" required>
-            <div class="help-text">10-digit contact number.</div>
-        </div>
+    <form th:action="@{/search}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
         <div class="form-group">
             <label for="sourceStation">Source Station</label>
             <div class="autocomplete-wrapper">
                 <input type="text" id="sourceStation" name="sourceStation"
-                       placeholder="Type to search (e.g. Bhopal)" required autocomplete="off">
+                       placeholder="Type to search e.g. Jaipur Junction" required autocomplete="off" />
                 <div id="source-suggestions" class="suggestions-list"></div>
             </div>
         </div>
@@ -38,79 +65,144 @@
             <label for="destinationStation">Destination Station</label>
             <div class="autocomplete-wrapper">
                 <input type="text" id="destinationStation" name="destinationStation"
-                       placeholder="Type to search (e.g. Mumbai)" required autocomplete="off">
+                       placeholder="Type to search e.g. New Delhi" required autocomplete="off" />
                 <div id="dest-suggestions" class="suggestions-list"></div>
             </div>
         </div>
 
         <div class="form-group">
-            <label for="trainNo">Train Number</label>
-            <input type="text" id="trainNo" name="trainNo" placeholder="e.g. 12980" required>
+            <label for="trainNo">Train Number (optional)</label>
+            <input type="text" id="trainNo" name="trainNo" placeholder="e.g. 12980" />
+            <div class="help-text">Leave empty if you don’t know. Matching still works.</div>
         </div>
 
         <div class="form-group">
             <label for="journeyDate">Journey Date</label>
-            <input type="date" id="journeyDate" name="journeyDate" required>
+            <input type="date" id="journeyDate" name="journeyDate" required />
         </div>
 
         <div class="form-group">
-            <label for="stationTime">Time you will reach station</label>
-            <input type="time" id="stationTime" name="stationTime" required>
-            <div class="help-text">Used to match people going to station at same time.</div>
+            <label for="stationTime">Time you will reach source station</label>
+            <input type="time" id="stationTime" name="stationTime" required />
+            <div class="help-text">Matches people reaching around the same time.</div>
         </div>
 
-        <button type="submit" class="btn-submit">Find Co-Travellers</button>
+        <div class="form-group">
+            <label for="destArrivalTime">Arrival time at destination station</label>
+            <input type="time" id="destArrivalTime" name="destArrivalTime" required />
+            <div class="help-text">Used for auto-sharing matches.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="journeyEndDate">Journey End Date (auto-filled, editable)</label>
+            <input type="date" id="journeyEndDate" name="journeyEndDate" />
+            <div class="help-text">If source time ≥ destination time, defaults to next day.</div>
+        </div>
+
+        <button type="submit" class="btn-submit">Find Co‑Travellers</button>
     </form>
 </div>
 
-<script th:inline="javascript">
-    /* Get the list of stations from Java Model */
-    /* Correct way to load data from Java */
-    const stations = /*[[${stationList}]]*/ [];
+<script>
+    // Profile menu
+    const btn = document.getElementById('profileBtn');
+    const menu = document.getElementById('profileMenu');
+    btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    document.addEventListener('click', (e) => {
+        if (!btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
+    });
+
+    // Autocomplete
+    async function fetchStations(prefix) {
+        const res = await fetch('/api/stations?q=' + encodeURIComponent(prefix));
+        if (!res.ok) return [];
+        return await res.json();
+    }
 
     function setupAutocomplete(inputId, listId) {
         const input = document.getElementById(inputId);
         const list = document.getElementById(listId);
+        let timer = null;
 
-        input.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            list.innerHTML = '';
+        input.addEventListener('input', function () {
+            const q = this.value.trim();
+            clearTimeout(timer);
 
-            if (!query) {
+            if (q.length < 2) {
+                list.innerHTML = '';
                 list.style.display = 'none';
                 return;
             }
 
-            const matches = stations.filter(s => s.toLowerCase().includes(query));
+            timer = setTimeout(async () => {
+                const stations = await fetchStations(q);
+                list.innerHTML = '';
 
-            if (matches.length > 0) {
-                matches.forEach(station => {
+                if (!stations || stations.length === 0) {
+                    list.style.display = 'none';
+                    return;
+                }
+
+                stations.forEach((station) => {
                     const item = document.createElement('div');
                     item.textContent = station;
-                    item.addEventListener('click', function() {
+                    item.addEventListener('click', () => {
                         input.value = station;
                         list.style.display = 'none';
                     });
                     list.appendChild(item);
                 });
+
                 list.style.display = 'block';
-            } else {
-                list.style.display = 'none';
-            }
+            }, 250);
         });
 
-        // Hide list if clicked outside
-        document.addEventListener('click', function(e) {
-            if (e.target !== input && e.target !== list) {
-                list.style.display = 'none';
-            }
+        document.addEventListener('click', (e) => {
+            if (e.target !== input && e.target !== list) list.style.display = 'none';
         });
     }
 
-    // Initialize for both inputs
     setupAutocomplete('sourceStation', 'source-suggestions');
     setupAutocomplete('destinationStation', 'dest-suggestions');
-</script>
 
+    // Auto-fill journeyEndDate
+    const journeyDateEl = document.getElementById('journeyDate');
+    const stationTimeEl = document.getElementById('stationTime');
+    const destArrivalTimeEl = document.getElementById('destArrivalTime');
+    const journeyEndDateEl = document.getElementById('journeyEndDate');
+
+    let endDateManuallyEdited = false;
+    journeyEndDateEl.addEventListener('input', () => endDateManuallyEdited = true);
+
+    function timeToMinutes(t) {
+        const [hh, mm] = t.split(':').map(Number);
+        return hh * 60 + mm;
+    }
+
+    function addDays(dateStr, days) {
+        const d = new Date(dateStr + 'T00:00:00');
+        d.setDate(d.getDate() + days);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function autoFillEndDate() {
+        const jd = journeyDateEl.value;
+        const st = stationTimeEl.value;
+        const dt = destArrivalTimeEl.value;
+
+        if (!jd || !st || !dt) return;
+        if (endDateManuallyEdited && journeyEndDateEl.value) return;
+
+        const end = timeToMinutes(st) >= timeToMinutes(dt) ? addDays(jd, 1) : jd;
+        journeyEndDateEl.value = end;
+    }
+
+    journeyDateEl.addEventListener('change', autoFillEndDate);
+    stationTimeEl.addEventListener('change', autoFillEndDate);
+    destArrivalTimeEl.addEventListener('change', autoFillEndDate);
+</script>
 </body>
 </html>

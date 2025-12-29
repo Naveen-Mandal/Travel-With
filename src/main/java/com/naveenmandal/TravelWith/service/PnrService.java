@@ -1,11 +1,10 @@
 package com.naveenmandal.TravelWith.service;
 
-
 import com.naveenmandal.TravelWith.entity.Pnr;
 import com.naveenmandal.TravelWith.entity.User;
 import com.naveenmandal.TravelWith.repository.PnrRepo;
 import com.naveenmandal.TravelWith.repository.UserRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -13,58 +12,76 @@ import java.time.LocalTime;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class PnrService {
 
-    @Autowired
-    private PnrRepo pnrRepo;
+    private final PnrRepo pnrRepo;
+    private final UserRepo userRepo;
 
-    @Autowired
-    private UserRepo userRepo;
-
-
-//      Save current user+PNR and find matching co-travelers.
-    public List<User> saveAndFindMatches(String phoneNo,
-                                         String name,
-                                         String sourceStation,
-                                         String destinationStation,
-                                         LocalTime stationTime,
-                                         String trainNo,
-                                         LocalDate journeyDate) {
-
-        //Save PNR
-        Pnr pnr = new Pnr(UUID.randomUUID().toString(), phoneNo, trainNo,journeyDate);
+    public void saveJourney(
+            String phoneNo,
+            String studentName,
+            String sourceStation,
+            String destinationStation,
+            LocalTime stationTime,
+            LocalTime destArrivalTime,
+            String trainNo,
+            LocalDate journeyDate,
+            LocalDate journeyEndDate
+    ) {
+        Pnr pnr = new Pnr(null, phoneNo, trainNo, journeyDate, journeyEndDate);
         pnrRepo.save(pnr);
 
-        //Save current user linked to this PNR
-        User currentUser = new User(UUID.randomUUID().toString(),
-                name,
+        User currentUser = new User(
+                phoneNo,
+                studentName,
                 sourceStation,
                 destinationStation,
                 stationTime,
-                pnr);
+                destArrivalTime,
+                pnr
+        );
         userRepo.save(currentUser);
+    }
 
-        //Find matches on same train + same date
-        List<User> sameTrain = userRepo.findByPnr_TrainNoAndPnr_JourneyDateAndPnr_PnrNoNot(
-                pnr.getTrainNo(),
-                pnr.getJourneyDate(),
-                pnr.getPnrNo()
-        );
-
-        //Find matches on same station + same time + same date
-        List<User> sameStation = userRepo.findCoPassengers(
-                currentUser.getSourceStation(),
-                pnr.getJourneyDate(),
-                currentUser.getTrainDepartureTime().plusHours(1),
-                currentUser.getTrainDepartureTime().minusHours(1),
-                pnr.getPnrNo()
-        );
-
-        //Combine and de-duplicate
+    public List<User> findMatchesAtSource(
+            String phoneNo,
+            String sourceStation,
+            LocalTime stationTime,
+            String trainNo,
+            LocalDate journeyDate,
+            LocalDate journeyEndDate
+    ) {
         Set<User> result = new LinkedHashSet<>();
-        result.addAll(sameTrain);
-        result.addAll(sameStation);
+
+        if (trainNo != null && !trainNo.isBlank()) {
+            result.addAll(userRepo.findSameTrainOverlap(trainNo, journeyDate, journeyEndDate, phoneNo));
+        }
+
+        result.addAll(userRepo.findCoPassengersAtSourceOverlap(
+                sourceStation,
+                journeyDate,
+                journeyEndDate,
+                stationTime.plusHours(1),
+                stationTime.minusHours(1),
+                phoneNo
+        ));
 
         return new ArrayList<>(result);
+    }
+
+    public List<User> findMatchesAtDestination(
+            String phoneNo,
+            String destinationStation,
+            LocalTime destArrivalTime,
+            LocalDate journeyEndDate
+    ) {
+        return userRepo.findCoPassengersAtDestination(
+                destinationStation,
+                journeyEndDate,
+                destArrivalTime.plusHours(1),
+                destArrivalTime.minusHours(1),
+                phoneNo
+        );
     }
 }
