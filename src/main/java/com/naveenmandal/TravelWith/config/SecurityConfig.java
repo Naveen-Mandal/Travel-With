@@ -27,21 +27,16 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-
-                // STATELESS: No server session memory used
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/register", "/style.css", "/js/**").permitAll()
+                        .requestMatchers("/", "/login", "/register", "/favicon.ico").permitAll() // Added / and favicon
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/*.css").permitAll() // Added wildcard for all CSS
                         .anyRequest().authenticated()
                 )
-
-                // Add the JWT Filter
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
