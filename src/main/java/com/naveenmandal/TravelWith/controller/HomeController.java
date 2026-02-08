@@ -3,7 +3,7 @@ package com.naveenmandal.TravelWith.controller;
 import com.naveenmandal.TravelWith.entity.StudentAccount;
 import com.naveenmandal.TravelWith.repository.StationRepo;
 import com.naveenmandal.TravelWith.service.PnrService;
-import com.naveenmandal.TravelWith.service.StudentAccountService;
+import com.naveenmandal.TravelWith.service.MyUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,7 +19,7 @@ public class HomeController {
 
     private final PnrService pnrService;
     private final StationRepo stationRepo;
-    private final StudentAccountService accountService;
+    private final MyUserDetailsService accountService;
 
     @ModelAttribute
     public void addProfile(Model model, Principal principal) {
