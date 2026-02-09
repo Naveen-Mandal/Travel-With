@@ -25,12 +25,18 @@ public class HomeController {
     public void addProfile(Model model, Principal principal) {
         if (principal == null) return;
         StudentAccount acc = accountService.getByPhoneNo(principal.getName());
-        model.addAttribute("displayName", acc.getName());
-        model.addAttribute("displayPhoneNo", acc.getPhoneNo());
+        if (acc != null) {
+            model.addAttribute("displayName", acc.getName());
+            model.addAttribute("displayPhoneNo", acc.getPhoneNo());
+        }
     }
 
     @GetMapping("/")
-    public String home() {
+    public String home(Principal principal) {
+        // If no user is logged in, redirect them to the login page
+        if (principal == null) {
+            return "redirect:/login";
+        }
         return "index";
     }
 
@@ -46,9 +52,13 @@ public class HomeController {
             @RequestParam(required = false) String journeyEndDate,
             Model model
     ) {
+        // Safety check for search as well
+        if (principal == null) {
+            return "redirect:/login";
+        }
+
         String phoneNo = principal.getName();
         StudentAccount acc = accountService.getByPhoneNo(phoneNo);
-
         String name = acc.getName();
 
         sourceStation = sourceStation == null ? "" : sourceStation.trim();

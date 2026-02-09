@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register", "/favicon.ico").permitAll() // Added / and favicon
+                        .requestMatchers( "/login", "/register", "/favicon.ico").permitAll() // Added / and favicon
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/*.css").permitAll() // Added wildcard for all CSS
                         .anyRequest().authenticated()
                 )
