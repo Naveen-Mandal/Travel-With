@@ -28,9 +28,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = null;
         String username = null;
+        String authHeader = request.getHeader("Authorization");
 
-        // 1. Check for JWT in Cookies (This fixes "Login every time")
-        if (request.getCookies() != null) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        } else if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("accessToken".equals(cookie.getName())) {
                     token = cookie.getValue();
@@ -39,16 +41,14 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        // 2. If token found, validate it
         if (token != null) {
             try {
                 username = jwtUtil.extractUsername(token);
             } catch (Exception e) {
-                // Token invalid or expired
+                // Ignore invalid or expired tokens and continue unauthenticated.
             }
         }
 
-        // 3. Authenticate against Spring Security
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             if (jwtUtil.validateToken(token, userDetails.getUsername())) {

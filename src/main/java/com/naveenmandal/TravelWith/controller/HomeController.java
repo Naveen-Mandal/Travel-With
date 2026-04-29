@@ -1,19 +1,22 @@
 package com.naveenmandal.TravelWith.controller;
 
+import com.naveenmandal.TravelWith.dto.ErrorResponse;
+import com.naveenmandal.TravelWith.dto.JourneySearchRequest;
+import com.naveenmandal.TravelWith.dto.JourneySearchResponse;
 import com.naveenmandal.TravelWith.entity.StudentAccount;
 import com.naveenmandal.TravelWith.repository.StationRepo;
 import com.naveenmandal.TravelWith.service.PnrService;
 import com.naveenmandal.TravelWith.service.MyUserDetailsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-@Controller
+@RestController
+@RequestMapping("/api/travel")
 @RequiredArgsConstructor
 public class HomeController {
 
@@ -21,88 +24,77 @@ public class HomeController {
     private final StationRepo stationRepo;
     private final MyUserDetailsService accountService;
 
-    @ModelAttribute
-    public void addProfile(Model model, Principal principal) {
-        if (principal == null) return;
-        StudentAccount acc = accountService.getByPhoneNo(principal.getName());
-        if (acc != null) {
-            model.addAttribute("displayName", acc.getName());
-            model.addAttribute("displayPhoneNo", acc.getPhoneNo());
-        }
-    }
-
-    @GetMapping("/")
-    public String home(Principal principal) {
-        // If no user is logged in, redirect them to the login page
+    @GetMapping("/me")
+    public ResponseEntity<?> me(Principal principal) {
         if (principal == null) {
-            return "redirect:/login";
+            return ResponseEntity.status(401).body(new ErrorResponse("Authentication is required."));
         }
-        return "index";
+
+        StudentAccount acc = accountService.getByPhoneNo(principal.getName());
+        if (acc == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(acc);
     }
 
     @PostMapping("/search")
-    public String search(
+    public ResponseEntity<?> search(
             Principal principal,
-            @RequestParam String sourceStation,
-            @RequestParam String destinationStation,
-            @RequestParam String stationTime,
-            @RequestParam String destArrivalTime,
-            @RequestParam(required = false) String trainNo,
-            @RequestParam String journeyDate,
-            @RequestParam(required = false) String journeyEndDate,
-            Model model
+            @RequestBody JourneySearchRequest request
     ) {
-        // Safety check for search as well
         if (principal == null) {
-            return "redirect:/login";
+            return ResponseEntity.status(401).body(new ErrorResponse("Authentication is required."));
+        }
+
+        String sourceStation = normalize(request.sourceStation());
+        String destinationStation = normalize(request.destinationStation());
+
+        if (sourceStation.isBlank() || !stationRepo.existsByName(sourceStation)) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Please select a valid Source Station from suggestions."));
+        }
+
+        if (destinationStation.isBlank() || !stationRepo.existsByName(destinationStation)) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Please select a valid Destination Station from suggestions."));
+        }
+
+        LocalTime st = LocalTime.parse(request.stationTime());
+        LocalTime dt = LocalTime.parse(request.destArrivalTime());
+
+        LocalDate jd = LocalDate.parse(request.journeyDate());
+        LocalDate jed = (request.journeyEndDate() == null || request.journeyEndDate().isBlank())
+                ? jd
+                : LocalDate.parse(request.journeyEndDate());
+
+        if (jed.isBefore(jd)) {
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Journey end date cannot be before journey date."));
         }
 
         String phoneNo = principal.getName();
         StudentAccount acc = accountService.getByPhoneNo(phoneNo);
-        String name = acc.getName();
-
-        sourceStation = sourceStation == null ? "" : sourceStation.trim();
-        destinationStation = destinationStation == null ? "" : destinationStation.trim();
-
-        if (!stationRepo.existsByName(sourceStation)) {
-            model.addAttribute("error", "Please select a valid Source Station from suggestions.");
-            return "index";
+        if (acc == null) {
+            return ResponseEntity.status(401).body(new ErrorResponse("Authenticated account was not found."));
         }
 
-        if (!stationRepo.existsByName(destinationStation)) {
-            model.addAttribute("error", "Please select a valid Destination Station from suggestions.");
-            return "index";
-        }
+        JourneySearchResponse response = pnrService.searchAndSaveJourney(
+                phoneNo,
+                acc.getName(),
+                sourceStation,
+                destinationStation,
+                st,
+                dt,
+                normalize(request.trainNo()),
+                jd,
+                jed
+        );
 
-        LocalTime st = LocalTime.parse(stationTime);
-        LocalTime dt = LocalTime.parse(destArrivalTime);
+        return ResponseEntity.ok(response);
+    }
 
-        LocalDate jd = LocalDate.parse(journeyDate);
-        LocalDate jed = (journeyEndDate == null || journeyEndDate.isBlank())
-                ? jd
-                : LocalDate.parse(journeyEndDate);
-
-        if (jed.isBefore(jd)) {
-            model.addAttribute("error", "Journey end date cannot be before journey date.");
-            return "index";
-        }
-
-        pnrService.saveJourney(phoneNo, name, sourceStation, destinationStation, st, dt, trainNo, jd, jed);
-
-        var matches = pnrService.findMatchesAtSource(phoneNo, sourceStation, st, trainNo, jd, jed);
-        var matchesAtDestination = pnrService.findMatchesAtDestination(phoneNo, destinationStation, dt, jed);
-
-        model.addAttribute("matches", matches);
-        model.addAttribute("matchesAtDestination", matchesAtDestination);
-
-        model.addAttribute("trainNo", trainNo);
-        model.addAttribute("journeyDate", jd);
-        model.addAttribute("journeyEndDate", jed);
-        model.addAttribute("sourceStation", sourceStation);
-        model.addAttribute("destinationStation", destinationStation);
-        model.addAttribute("stationTime", st);
-        model.addAttribute("destArrivalTime", dt);
-
-        return "result";
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

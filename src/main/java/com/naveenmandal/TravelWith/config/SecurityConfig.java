@@ -27,10 +27,10 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/" ,"/login", "/register", "/favicon.ico").permitAll() // Added / and favicon
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/*.css").permitAll() // Added wildcard for all CSS
+                        .requestMatchers("/", "/api/auth/**", "/api/stations/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

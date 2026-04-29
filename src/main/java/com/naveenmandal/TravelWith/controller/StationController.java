@@ -1,7 +1,9 @@
 package com.naveenmandal.TravelWith.controller;
 
+import com.naveenmandal.TravelWith.entity.Station;
 import com.naveenmandal.TravelWith.repository.StationRepo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,13 +20,10 @@ public class StationController {
     private final StationRepo stationRepo;
 
     @GetMapping
-    public List<String> autocomplete(@RequestParam("q") String q) {
+    public ResponseEntity<List<Station>> autocomplete(@RequestParam("q") String q) {
         q = (q == null) ? "" : q.trim();
-        if (q.length() < 2) return List.of();
+        if (q.length() < 2) return ResponseEntity.ok(List.of());
 
-        return stationRepo.findTop20ByNameStartingWithOrderByNameAsc(q)
-                .stream()
-                .map(s -> s.getName())
-                .toList();
+        return ResponseEntity.ok(stationRepo.findTop20ByNameStartingWithOrderByNameAsc(q));
     }
 }

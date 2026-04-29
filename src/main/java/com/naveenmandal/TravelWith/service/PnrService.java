@@ -1,5 +1,7 @@
 package com.naveenmandal.TravelWith.service;
 
+import com.naveenmandal.TravelWith.dto.JourneySearchResponse;
+import com.naveenmandal.TravelWith.dto.MatchResponse;
 import com.naveenmandal.TravelWith.entity.Pnr;
 import com.naveenmandal.TravelWith.entity.User;
 import com.naveenmandal.TravelWith.repository.PnrRepo;
@@ -82,6 +84,74 @@ public class PnrService {
                 destArrivalTime.plusHours(1),
                 destArrivalTime.minusHours(1),
                 phoneNo
+        );
+    }
+
+    public JourneySearchResponse searchAndSaveJourney(
+            String phoneNo,
+            String studentName,
+            String sourceStation,
+            String destinationStation,
+            LocalTime stationTime,
+            LocalTime destArrivalTime,
+            String trainNo,
+            LocalDate journeyDate,
+            LocalDate journeyEndDate
+    ) {
+        saveJourney(
+                phoneNo,
+                studentName,
+                sourceStation,
+                destinationStation,
+                stationTime,
+                destArrivalTime,
+                trainNo,
+                journeyDate,
+                journeyEndDate
+        );
+
+        List<MatchResponse> matchesAtSource = findMatchesAtSource(
+                phoneNo,
+                sourceStation,
+                stationTime,
+                trainNo,
+                journeyDate,
+                journeyEndDate
+        ).stream().map(this::toMatchResponse).toList();
+
+        List<MatchResponse> matchesAtDestination = findMatchesAtDestination(
+                phoneNo,
+                destinationStation,
+                destArrivalTime,
+                journeyEndDate
+        ).stream().map(this::toMatchResponse).toList();
+
+        return new JourneySearchResponse(
+                trainNo,
+                journeyDate,
+                journeyEndDate,
+                sourceStation,
+                destinationStation,
+                stationTime,
+                destArrivalTime,
+                matchesAtSource,
+                matchesAtDestination
+        );
+    }
+
+    private MatchResponse toMatchResponse(User user) {
+        Pnr pnr = user.getPnr();
+
+        return new MatchResponse(
+                user.getPhoneNo(),
+                user.getName(),
+                user.getSourceStation(),
+                user.getDestinationStation(),
+                user.getTrainDepartureTime(),
+                user.getDestArrivalTime(),
+                pnr == null ? null : pnr.getTrainNo(),
+                pnr == null ? null : pnr.getJourneyDate(),
+                pnr == null ? null : pnr.getJourneyEndDate()
         );
     }
 }

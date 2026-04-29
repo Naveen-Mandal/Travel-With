@@ -17,9 +17,8 @@ import java.util.function.Function;
 @Service
 public class JwtUtil {
 
-    // Injects the value from application.properties
-//    @Value("${app.jwt.secret}")
-    private String secret = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";
+    @Value("${app.jwt.secret}")
+    private String secret;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

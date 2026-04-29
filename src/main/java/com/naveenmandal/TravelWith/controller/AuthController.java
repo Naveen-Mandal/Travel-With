@@ -1,18 +1,22 @@
 
 package com.naveenmandal.TravelWith.controller;
 
+import com.naveenmandal.TravelWith.dto.AuthResponse;
+import com.naveenmandal.TravelWith.dto.ErrorResponse;
+import com.naveenmandal.TravelWith.dto.LoginRequest;
+import com.naveenmandal.TravelWith.dto.RegisterRequest;
+import com.naveenmandal.TravelWith.entity.StudentAccount;
 import com.naveenmandal.TravelWith.security.JwtUtil;
 import com.naveenmandal.TravelWith.service.MyUserDetailsService;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -21,81 +25,51 @@ public class AuthController {
     private final MyUserDetailsService accountService;
 
 
-    @GetMapping("/login")
-    public String login() {
-        return "login";
-    }
-
     @PostMapping("/login")
-    public String loginUser(@RequestParam String username, @RequestParam String password, HttpServletResponse response, Model model) {
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request) {
         try {
-            // Use the helper method to handle login logic
-            authenticateAndSetCookie(username, password, response);
-            return "redirect:/";
+            String phoneNo = request.phoneNo();
+            authenticate(phoneNo, request.password());
+            return ResponseEntity.ok(buildAuthResponse(phoneNo));
         } catch (Exception e) {
-            model.addAttribute("error", "Invalid phone number or password");
-            return "login";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Invalid phone number or password"));
         }
-    }
-
-    @GetMapping("/register")
-    public String registerPage() {
-        return "register";
     }
 
     @PostMapping("/register")
-    public String register(
-            @RequestParam String phoneNo,
-            @RequestParam String name,
-            @RequestParam String password,
-            @RequestParam String confirmPassword,
-            HttpServletResponse response, // Add response to set cookie
-            Model model
-    ) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
-            if (!password.equals(confirmPassword)) {
-                model.addAttribute("error", "Passwords do not match.");
-                return "register";
+            if (!request.password().equals(request.confirmPassword())) {
+                return ResponseEntity.badRequest().body(new ErrorResponse("Passwords do not match."));
             }
 
-            // 1. Create the user in the database
-            accountService.register(name, phoneNo, password);
-
-            // 2. AUTO-LOGIN: Authenticate and set cookie immediately
-            authenticateAndSetCookie(phoneNo, password, response);
-
-            // 3. Redirect directly to home, skipping the login page
-            return "redirect:/";
+            accountService.register(request.name(), request.phoneNo(), request.password());
+            authenticate(request.phoneNo(), request.password());
+            return ResponseEntity.status(HttpStatus.CREATED).body(buildAuthResponse(request.phoneNo()));
 
         } catch (Exception e) {
-            model.addAttribute("error", "Registration failed: " + e.getMessage());
-            return "register";
+            return ResponseEntity.badRequest().body(new ErrorResponse("Registration failed: " + e.getMessage()));
         }
     }
 
-    @GetMapping("/logout")
-    public String logout(HttpServletResponse response) {
-        Cookie cookie = new Cookie("accessToken", null);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
-        return "redirect:/login?logout";
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.noContent().build();
     }
 
-    // --- Best Practice: Helper Method to avoid Code Duplication ---
-    private void authenticateAndSetCookie(String username, String password, HttpServletResponse response) {
-        // 1. Authenticate
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+    private void authenticate(String phoneNo, String password) {
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(phoneNo, password));
+    }
 
-        // 2. Generate Token
-        String token = jwtUtil.generateToken(username);
+    private AuthResponse buildAuthResponse(String phoneNo) {
+        StudentAccount account = accountService.getByPhoneNo(phoneNo);
 
-        // 3. Set Cookie
-        Cookie cookie = new Cookie("accessToken", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true); // Keep true for Aiven/Production
-        cookie.setPath("/");
-        cookie.setMaxAge(60 * 60 * 24* 20); // 10 Hours
-        response.addCookie(cookie);
+        return new AuthResponse(
+                jwtUtil.generateToken(phoneNo),
+                "Bearer",
+                phoneNo,
+                account == null ? null : account.getName()
+        );
     }
 }
