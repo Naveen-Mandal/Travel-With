@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface StationRepo extends JpaRepository<Station, Long> {
 
-    // Prefix-only search (autocomplete)
-    List<Station> findTop20ByNameStartingWithOrderByNameAsc(String prefix);
+    // Search anywhere in the station name so entries like "NEW DELHI" appear for "delhi".
+    List<Station> findTop20ByNameContainingIgnoreCaseOrderByNameAsc(String query);
 
     boolean existsByName(String name);
 }

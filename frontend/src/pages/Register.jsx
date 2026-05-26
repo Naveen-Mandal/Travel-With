@@ -2,9 +2,16 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, setToken } from "../api.js";
 
-export default function Login() {
+const initialForm = {
+  name: "",
+  phoneNo: "",
+  password: "",
+  confirmPassword: "",
+};
+
+export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ phoneNo: "", password: "" });
+  const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,10 +22,16 @@ export default function Login() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const data = await apiFetch("/api/auth/login", {
+      const data = await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify(form),
       });
@@ -33,12 +46,26 @@ export default function Login() {
 
   return (
     <section className="mx-auto max-w-md">
-      <h1 className="text-2xl font-semibold text-slate-950">Login</h1>
+      <h1 className="text-2xl font-semibold text-slate-950">Create account</h1>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <label className="block">
+          <span className="text-sm font-medium text-slate-700">Full name</span>
+          <input
+            name="name"
+            value={form.name}
+            onChange={updateField}
+            required
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+          />
+        </label>
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Phone number</span>
           <input
             name="phoneNo"
+            type="tel"
+            inputMode="numeric"
+            minLength={10}
+            maxLength={10}
             value={form.phoneNo}
             onChange={updateField}
             required
@@ -50,7 +77,20 @@ export default function Login() {
           <input
             name="password"
             type="password"
+            minLength={8}
             value={form.password}
+            onChange={updateField}
+            required
+            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-medium text-slate-700">Confirm password</span>
+          <input
+            name="confirmPassword"
+            type="password"
+            minLength={8}
+            value={form.confirmPassword}
             onChange={updateField}
             required
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
@@ -62,13 +102,13 @@ export default function Login() {
           disabled={loading}
           className="w-full rounded-md bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? "Creating account..." : "Create account"}
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
-        New to Travel With?{" "}
-        <Link to="/register" className="font-medium text-teal-700 hover:text-teal-600">
-          Create account
+        Already registered?{" "}
+        <Link to="/login" className="font-medium text-teal-700 hover:text-teal-600">
+          Login
         </Link>
       </p>
     </section>

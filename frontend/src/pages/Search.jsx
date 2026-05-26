@@ -14,32 +14,54 @@ const initialForm = {
 export default function Search() {
   const [form, setForm] = useState(initialForm);
   const [matches, setMatches] = useState(null);
-  const [stations, setStations] = useState([]);
+  const [sourceStations, setSourceStations] = useState([]);
+  const [destinationStations, setDestinationStations] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const loadStations = useCallback(async (query) => {
     if (query.trim().length < 2) {
-      setStations([]);
-      return;
+      return [];
     }
 
-    const data = await apiFetch(`/api/stations?q=${encodeURIComponent(query)}`, {
+    return apiFetch(`/api/stations?q=${encodeURIComponent(query)}`, {
+      auth: false,
       method: "GET",
     });
-    setStations(data);
   }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      loadStations(form.sourceStation).catch(() => setStations([]));
+      loadStations(form.sourceStation)
+        .then(setSourceStations)
+        .catch(() => setSourceStations([]));
     }, 250);
 
     return () => window.clearTimeout(timer);
   }, [form.sourceStation, loadStations]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadStations(form.destinationStation)
+        .then(setDestinationStations)
+        .catch(() => setDestinationStations([]));
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [form.destinationStation, loadStations]);
+
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  }
+
+  function selectStation(name, value) {
+    setForm((current) => ({ ...current, [name]: value }));
+
+    if (name === "sourceStation") {
+      setSourceStations([]);
+    } else if (name === "destinationStation") {
+      setDestinationStations([]);
+    }
   }
 
   async function handleSubmit(event) {
@@ -65,8 +87,8 @@ export default function Search() {
     <section>
       <h1 className="text-2xl font-semibold text-slate-950">Find co-travelers</h1>
       <form onSubmit={handleSubmit} className="mt-6 grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
-        <StationInput name="sourceStation" label="Source station" value={form.sourceStation} onChange={updateField} suggestions={stations} />
-        <StationInput name="destinationStation" label="Destination station" value={form.destinationStation} onChange={updateField} suggestions={[]} />
+        <StationInput name="sourceStation" label="Source station" value={form.sourceStation} onChange={updateField} onSelect={selectStation} suggestions={sourceStations} />
+        <StationInput name="destinationStation" label="Destination station" value={form.destinationStation} onChange={updateField} onSelect={selectStation} suggestions={destinationStations} />
         <Field name="stationTime" label="Departure time" type="time" value={form.stationTime} onChange={updateField} />
         <Field name="destArrivalTime" label="Destination arrival time" type="time" value={form.destArrivalTime} onChange={updateField} />
         <Field name="trainNo" label="Train number" value={form.trainNo} onChange={updateField} required={false} />
@@ -107,7 +129,7 @@ function Field({ label, required = true, ...props }) {
   );
 }
 
-function StationInput({ suggestions, ...props }) {
+function StationInput({ suggestions, onSelect, ...props }) {
   return (
     <div>
       <Field {...props} />
@@ -117,7 +139,7 @@ function StationInput({ suggestions, ...props }) {
             <button
               key={station.id}
               type="button"
-              onClick={() => props.onChange({ target: { name: props.name, value: station.name } })}
+              onClick={() => onSelect(props.name, station.name)}
               className="block w-full rounded px-2 py-1 text-left text-sm text-slate-700 hover:bg-white"
             >
               {station.name}

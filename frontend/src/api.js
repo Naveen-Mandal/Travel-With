@@ -13,18 +13,22 @@ export function clearToken() {
 }
 
 export async function apiFetch(path, options = {}) {
+  const { auth = true, ...fetchOptions } = options;
   const token = getToken();
   const headers = {
-    "Content-Type": "application/json",
-    ...options.headers,
+    ...fetchOptions.headers,
   };
 
-  if (token) {
+  if (fetchOptions.body && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (token && auth) {
     headers.Authorization = `Bearer ${token}`;
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   });
 

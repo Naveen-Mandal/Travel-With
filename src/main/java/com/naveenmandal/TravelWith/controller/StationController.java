@@ -24,6 +24,6 @@ public class StationController {
         q = (q == null) ? "" : q.trim();
         if (q.length() < 2) return ResponseEntity.ok(List.of());
 
-        return ResponseEntity.ok(stationRepo.findTop20ByNameStartingWithOrderByNameAsc(q));
+        return ResponseEntity.ok(stationRepo.findTop20ByNameContainingIgnoreCaseOrderByNameAsc(q));
     }
 }
