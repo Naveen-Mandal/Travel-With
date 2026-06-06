@@ -1,17 +1,35 @@
 package com.naveenmandal.TravelWith.security;
 
+import com.naveenmandal.TravelWith.service.MyUserDetailsService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-// ... keep your existing imports
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
+
+@Component
 public class JwtFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
-    
-    // ... your existing dependencies (JwtUtil, MyUserDetailsService)
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private MyUserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
         String authHeader = request.getHeader("Authorization");
@@ -26,10 +44,14 @@ public class JwtFilter extends OncePerRequestFilter {
             }
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Your validation logic...
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                
                 if (jwtUtil.validateToken(token, userDetails)) {
                     logger.debug("Token validation successful for user '{}'", username);
-                    // UsernamePasswordAuthenticationToken setup...
+                    UsernamePasswordAuthenticationToken authToken = 
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
                     logger.warn("Token validation failed for incoming user token context.");
                 }
