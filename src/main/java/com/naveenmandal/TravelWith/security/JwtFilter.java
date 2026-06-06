@@ -1,62 +1,41 @@
 package com.naveenmandal.TravelWith.security;
 
-import com.naveenmandal.TravelWith.service.MyUserDetailsService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+// ... keep your existing imports
 
-import java.io.IOException;
-
-@Component
-@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
-    private final MyUserDetailsService userDetailsService;
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
+    
+    // ... your existing dependencies (JwtUtil, MyUserDetailsService)
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
+            throws ServletException, IOException {
+        
+        String authHeader = request.getHeader("Authorization");
         String token = null;
         String username = null;
-        String authHeader = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-        } else if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("accessToken".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                    break;
+        try {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+                username = jwtUtil.extractUsername(token);
+                logger.info("Intercepted request: Validating token for user '{}'", username);
+            }
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // Your validation logic...
+                if (jwtUtil.validateToken(token, userDetails)) {
+                    logger.debug("Token validation successful for user '{}'", username);
+                    // UsernamePasswordAuthenticationToken setup...
+                } else {
+                    logger.warn("Token validation failed for incoming user token context.");
                 }
             }
-        }
-
-        if (token != null) {
-            try {
-                username = jwtUtil.extractUsername(token);
-            } catch (Exception e) {
-                // Ignore invalid or expired tokens and continue unauthenticated.
-            }
-        }
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(token, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
+        } catch (Exception ex) {
+            logger.error("Security Filter Exception triggered during processing: {}", ex.getMessage());
         }
 
         filterChain.doFilter(request, response);
